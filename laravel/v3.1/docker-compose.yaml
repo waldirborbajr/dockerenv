@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  laravel-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel-dev
+    volumes:
+      - ${HOME}/prj/megaapi:/var/www/html
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - DB_CONNECTION=firebird
+      - DB_HOST=seu-servidor-firebird
+      - DB_PORT=3050
+      - DB_DATABASE=/caminho/para/seu/banco.fdb
+      - DB_USERNAME=seu-usuario
+      - DB_PASSWORD=sua-senha
+    working_dir: /var/www/html
+    networks:
+      - laravel-network
+
+networks:
+  laravel-network:
+    driver: bridge
