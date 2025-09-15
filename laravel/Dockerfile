@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libgmp-dev \
+    iputils-ping \
     && rm -rf /var/lib/apt/lists/*    
 
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
@@ -44,9 +45,9 @@ RUN groupadd -g ${GROUP_ID} www && useradd -u ${USER_ID} -g www -m www
 WORKDIR /var/www/html
 USER www
 
-EXPOSE 8000
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+EXPOSE 8012
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8012"]
 
 # Health check para verificar se o servidor está rodando
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000 || exit 1
+    CMD curl -f http://localhost:8012 || exit 1
