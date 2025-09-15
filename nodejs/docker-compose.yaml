@@ -13,3 +13,9 @@ services:
     environment:
       - NODE_ENV=development
       - HOST=0.0.0.0
+    networks:
+      - laravel-network
+
+networks:
+  laravel-network:
+    driver: bridge

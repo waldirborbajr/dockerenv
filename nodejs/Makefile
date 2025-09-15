@@ -9,13 +9,13 @@ all: up
 .PHONY: up
 up:
 	@echo "Starting the development environment..."
-	docker compose up -d
+	docker compose up --build --force-recreate
 
 # Stop the development environment
 .PHONY: down
 down:
 	@echo "Stopping the development environment..."
-	docker compose down
+	docker compose down --rmi all --remove-orphans
 
 # Rebuild and start the development environment
 .PHONY: rebuild
