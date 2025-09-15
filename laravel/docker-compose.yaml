@@ -1,0 +1,29 @@
+services:
+  omniapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    container_name: omniapi
+    hostname: omniapi
+    image: ${PROJECT_NAME:-omniapi}:latest  # Set default to avoid blank variable
+    working_dir: /var/www/html
+    volumes:
+      - ${PWD}:/var/www/html
+    ports:
+      - "9005:8000"
+    environment:
+      APP_ENV: development
+      COMPOSER_MEMORY_LIMIT: -1
+    command: >
+      sh -c "composer install --no-interaction --prefer-dist --ignore-platform-reqs &&
+             php artisan key:generate --force || true &&
+             php artisan serve --host=0.0.0.0 --port=8000"
+    networks:
+      - laravel-network
+
+networks:
+  laravel-network:
+    driver: bridge

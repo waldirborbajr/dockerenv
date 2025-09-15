@@ -1,5 +1,8 @@
 FROM php:7.4-cli
 
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
 # Dependências Laravel + Firebird
 RUN apt-get update && apt-get install -y \
     firebird-dev \
@@ -7,13 +10,15 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     unzip \
     git \
+    libonig-dev \
+    default-mysql-client \
+    default-libmysqlclient-dev \
     libpng-dev \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libgmp-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*    
 
-# Instalador oficial de extensões PHP
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/install-php-extensions \
@@ -28,7 +33,20 @@ RUN chmod +x /usr/local/bin/install-php-extensions \
         gmp \
         curl \
         dom \
-        json
+        json \
+        exif \
+        pcntl  
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+RUN groupadd -g ${GROUP_ID} www && useradd -u ${USER_ID} -g www -m www
 
 WORKDIR /var/www/html
+USER www
 
+EXPOSE 8000
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+
+# Health check para verificar se o servidor está rodando
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000 || exit 1
