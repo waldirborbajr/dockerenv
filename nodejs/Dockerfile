@@ -2,7 +2,7 @@
 FROM node:18-alpine
 
 # Install yarn
-RUN apk add --no-cache yarn
+# RUN apk add --no-cache yarn
 
 # Set working directory inside the container
 WORKDIR /app
