@@ -20,7 +20,6 @@ CONTAINER_PORT ?= 8012          # Porta exposta pelo serviço Laravel
 up: macvlan-up
 	@echo "🔄 Subindo containers..."
 	docker compose up --build --force-recreate
-#	$(MAKE) test-net
 
 down:
 	@echo "🛑 Parando containers..."
@@ -76,7 +75,7 @@ macvlan-down:
 # Testes de conectividade
 # ===============================
 
-test-net:
+lan-test:
 	@echo "📡 Testando conectividade com o container em $(CONTAINER_IP)..."
 	@if ping -c 2 $(CONTAINER_IP) >/dev/null 2>&1; then \
 		echo "✅ Conectividade OK: host alcança o container $(CONTAINER_IP)."; \
