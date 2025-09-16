@@ -13,9 +13,6 @@ COPY package.json yarn.lock* ./
 # Install dependencies with yarn
 RUN yarn install
 
-# Copy the rest of the application code
-COPY . .
-
 # Expose the port used by webpack-dev-server
 EXPOSE 8080
 

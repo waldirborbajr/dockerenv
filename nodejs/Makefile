@@ -40,3 +40,5 @@ shell:
 clean:
 	@echo "Cleaning up Docker resources..."
 	docker compose down --rmi local --volumes
+
+restart: down up

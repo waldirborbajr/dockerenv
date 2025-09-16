@@ -17,7 +17,7 @@ CONTAINER_PORT ?= 8012          # Porta exposta pelo serviço Laravel
 # Alvos principais
 # ===============================
 
-up: host-macvlan
+up: macvlan-up
 	@echo "🔄 Subindo containers..."
 	docker compose up --build --force-recreate
 	$(MAKE) test-net
@@ -31,25 +31,41 @@ restart: down up
 logs:
 	docker compose logs -f $(PROJECT_NAME)
 
+bash:
+	docker compose exec -it $(PROJECT_NAME) bash
+
 ps:
 	docker compose ps
 
 artisan:
-	docker compose exec $(PROJECT_NAME) php artisan $(cmd)	
+	docker compose exec $(PROJECT_NAME) php artisan $(cmd)
+
+route:
+	docker compose exec $(PROJECT_NAME) php artisan route:list
 
 # ===============================
 # Rede host <-> macvlan
 # ===============================
 
-host-macvlan:
+macvlan-up:
 	@echo "🌐 Verificando interface macvlan0 no host..."
 	@if ip link show macvlan0 >/dev/null 2>&1; then \
 		echo "✔️ Interface macvlan0 já existe."; \
 	else \
 		sudo ip link add macvlan0 link $(HOST_IFACE) type macvlan mode bridge && \
-		sudo ip addr add $(HOST_MACVLAN_IP)/$(HOST_NETMASK) dev macvlan0 && \
+		sudo ip addr add $(strip $(HOST_MACVLAN_IP))/$(strip $(HOST_NETMASK)) dev macvlan0 && \
 		sudo ip link set macvlan0 up && \
-		echo "✅ Interface macvlan0 criada com IP $(HOST_MACVLAN_IP)/$(HOST_NETMASK)."; \
+		echo "✅ Interface macvlan0 criada com IP $(HOST_MACVLAN_ADDR)."; \
+	fi
+
+macvlan-down:
+	@if ip link show macvlan0 >/dev/null 2>&1; then \
+		sudo ip link set macvlan0 down && \
+		sudo ip addr del $(strip $(HOST_MACVLAN_IP))/$(strip $(HOST_NETMASK)) dev macvlan0 && \
+		sudo ip link delete macvlan0 && \
+		echo "✅ Interface macvlan0 removida."; \
+	else \
+		echo "ℹ️ Interface macvlan0 não existe."; \
 	fi
 
 # ===============================
@@ -69,3 +85,11 @@ test-net:
 	else \
 		echo "⚠️ Aviso: serviço Laravel não respondeu na porta $(CONTAINER_PORT)."; \
 	fi
+
+prune:
+	docker compose down -v --rmi all || true
+	docker network rm omni-api-master_laravel-network || true
+	docker system prune -af --volumes
+
+inspect:
+	docker inspect omniapi --format='{{.State.Health.Status}}'	
