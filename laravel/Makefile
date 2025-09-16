@@ -20,7 +20,7 @@ CONTAINER_PORT ?= 8012          # Porta exposta pelo serviço Laravel
 up: macvlan-up
 	@echo "🔄 Subindo containers..."
 	docker compose up --build --force-recreate
-	$(MAKE) test-net
+#	$(MAKE) test-net
 
 down:
 	@echo "🛑 Parando containers..."
@@ -42,6 +42,10 @@ artisan:
 
 route:
 	docker compose exec $(PROJECT_NAME) php artisan route:list
+
+route-clear:
+	docker compose exec $(PROJECT_NAME) php artisan route:clear
+	docker compose exec $(PROJECT_NAME) php artisan config:clear
 
 # ===============================
 # Rede host <-> macvlan
