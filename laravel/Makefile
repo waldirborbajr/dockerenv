@@ -1,8 +1,9 @@
 # Define project name
-PROJECT_NAME=omniapi
+PROJECT_NAME_DEV=omniapidev
+PROJECT_NAME_PROD=omniapiprod
 
 # Mark targets as phony (not file-based)
-.PHONY: up down restart logs artisan composer route install tinker migrate bash prune inspect
+.PHONY: up down restart logs artisan composer route install tinker migrate bash prune inspect build-prod push-prod deploy-prod down-prod logs-prod inspect-prod
 
 # ===============================
 # Configurações da rede macvlan
@@ -20,6 +21,7 @@ CONTAINER_PORT ?= 8012          # Porta exposta pelo serviço Laravel
 up: macvlan-up
 	@echo "🔄 Subindo containers..."
 	docker compose up --build --force-recreate
+#	$(MAKE) test-net
 
 down:
 	@echo "🛑 Parando containers..."
@@ -28,23 +30,23 @@ down:
 restart: down up
 
 logs:
-	docker compose logs -f $(PROJECT_NAME)
+	docker compose logs -f $(PROJECT_NAME_DEV)
 
 bash:
-	docker compose exec -it $(PROJECT_NAME) bash
+	docker compose exec -it $(PROJECT_NAME_DEV) bash
 
 ps:
 	docker compose ps
 
 artisan:
-	docker compose exec $(PROJECT_NAME) php artisan $(cmd)
+	docker compose exec $(PROJECT_NAME_DEV) php artisan $(cmd)
 
 route:
-	docker compose exec $(PROJECT_NAME) php artisan route:list
+	docker compose exec $(PROJECT_NAME_DEV) php artisan route:list
 
 route-clear:
-	docker compose exec $(PROJECT_NAME) php artisan route:clear
-	docker compose exec $(PROJECT_NAME) php artisan config:clear
+	docker compose exec $(PROJECT_NAME_DEV) php artisan route:clear
+	docker compose exec $(PROJECT_NAME_DEV) php artisan config:clear
 
 # ===============================
 # Rede host <-> macvlan
@@ -64,18 +66,13 @@ macvlan-up:
 macvlan-down:
 	@if ip link show macvlan0 >/dev/null 2>&1; then \
 		sudo ip link set macvlan0 down && \
-		sudo ip addr del $(strip $(HOST_MACVLAN_IP))/$(strip $(HOST_NETMASK)) dev macvlan0 && \
-		sudo ip link delete macvlan0 && \
-		echo "✅ Interface macvlan0 removida."; \
-	else \
-		echo "ℹ️ Interface macvlan0 não existe."; \
-	fi
+		sudo ip addr del $(strip $(HOST_MACVLAN_IP))/$(strip $(HOST_NETMASK)) dev macvlan0 &&არ
 
 # ===============================
 # Testes de conectividade
 # ===============================
 
-lan-test:
+test-net:
 	@echo "📡 Testando conectividade com o container em $(CONTAINER_IP)..."
 	@if ping -c 2 $(CONTAINER_IP) >/dev/null 2>&1; then \
 		echo "✅ Conectividade OK: host alcança o container $(CONTAINER_IP)."; \
@@ -95,4 +92,37 @@ prune:
 	docker system prune -af --volumes
 
 inspect:
-	docker inspect omniapi --format='{{.State.Health.Status}}'	
+	docker inspect omniapi --format='{{.State.Health.Status}}'
+
+# ===============================
+# Alvos para produção
+# ===============================
+
+build-prod:
+	@echo "🛠️ Construindo imagem de produção..."
+	docker build -f Dockerfile.prod -t ${PROJECT_NAME_PROD}:prod .
+
+push-prod:
+	@echo "🚀 Enviando imagem para registry..."
+	# Replace 'your-registry' with your actual registry (e.g., Docker Hub, AWS ECR)
+	docker tag ${PROJECT_NAME_PROD}:prod your-registry/${PROJECT_NAME_PROD}:prod
+	docker push your-registry/${PROJECT_NAME_PROD}:prod
+
+deploy-prod:
+	@echo "🚀 Deployando container de produção..."
+	@export APP_KEY=base64:KJE7L0kKY+aPQpPNeCuRse2Ckc2cxpUXDm8csivsHD0=; \
+	export DB_PASSWORD_PA=@senha; \
+	export DB_PASSWORD_KBB=@senha; \
+	export DB_PASSWORD=masterkey; \
+	export MAIL_PASSWORD="#Senha_123_Mudar*"; \
+	docker compose -f docker-compose.prod.yaml up -d
+
+down-prod:
+	@echo "🛑 Parando container de produção..."
+	docker compose -f docker-compose.prod.yaml down
+
+logs-prod:
+	docker compose -f docker-compose.prod.yaml logs -f
+
+inspect-prod:
+	docker inspect omniapi-prod --format='{{.State.Health.Status}}'
